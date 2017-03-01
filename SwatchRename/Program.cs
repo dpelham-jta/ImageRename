@@ -1,14 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace ImageRename
+namespace SwatchRename
 {
     class Program
     {
-        static Regex _stripName = new Regex(@"^\d+[a-zA-Z]?_\d+(_[a-zA-Z0-9]*)?");
+        static Regex _stripLead = new Regex(@"^\w?");
+        static Regex _stripName = new Regex(@"^([fb]|alt)\d{0,2}$");
+
         static void Main(string[] args)
         {
             try
@@ -26,7 +27,7 @@ namespace ImageRename
             {
                 DoYerThing();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.Out.WriteLine(ex.Message);
                 Console.ReadKey();
@@ -43,24 +44,23 @@ namespace ImageRename
 
         static void DoYerThing()
         {
-            var currentPics = Directory.EnumerateFiles(".\\", "*.jpg");
-            var existingPics = Directory.EnumerateFiles(".\\img_copy\\", "*.jpg").ToList();
+            var currentPics = Directory.EnumerateFiles(".\\", "*.tif");
+            var existingPics = Directory.EnumerateFiles(".\\img_copy\\", "*.tif").ToList();
             Console.Out.Write("A");
 
             foreach (var pic in currentPics)
             {
-                var renamedPic = RenamePic(pic.Replace(".\\", string.Empty));
-                var newPicName = ".\\img_copy\\" + renamedPic;
+                var newPicName = ".\\img_copy\\" + RenamePic(pic.Replace(".\\", string.Empty));
 
                 if (existingPics.Contains(newPicName))
                     continue;
 
-                if(File.Exists(newPicName))
+                if (File.Exists(newPicName))
                 {
-                    var i = 'a';
-                    var extendedName = string.Format("{0}{1}.jpg", newPicName.Replace(".jpg", string.Empty), i++);
+                    var i = 1;
+                    var extendedName = string.Format("{0}({1}).tif", newPicName.Replace(".tif", string.Empty), i++);
                     while (File.Exists(extendedName))
-                        extendedName = string.Format("{0}{1}.jpg", newPicName.Replace(".jpg", string.Empty), i++);
+                        extendedName = string.Format("{0}({1}).tif", newPicName.Replace(".tif", string.Empty), i++);
 
                     newPicName = extendedName;
                 }
@@ -74,8 +74,14 @@ namespace ImageRename
 
         static string RenamePic(string picName)
         {
-            var match = _stripName.Match(picName);
-            return match.Value + ".jpg";
+            var picNameHolder = picName.Replace(".tif", string.Empty);
+            var picNameParts = picNameHolder.Split('_');
+            var addTertiary = false;
+
+            picNameHolder = string.Format("{0}_{1}{2}_swatch.tif", picNameParts[0], picNameParts[1],
+                addTertiary ? "_" + picNameParts[2] : string.Empty);
+
+            return picNameHolder;
         }
     }
 }
